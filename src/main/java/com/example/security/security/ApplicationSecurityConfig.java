@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -29,7 +30,13 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                //.csrf().disable()
+                .csrf().disable()
+                //csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).and()
+                    //csrfTokenRepository(...) setting up the repository: how the csrf token is generated
+                    //.withHttpOnlyFalse means cookie will be inaccessible from client side
+                    //CookieCsrfTokenRepository sets the value of token, sets the cookie, set cookie security, and adds the cookie to the response
+                    //csrf header name = "X-XSRF-TOKEN"
+
                 .authorizeRequests() //want to authorize request
 
                 /*
@@ -53,10 +60,15 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 //.antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(), ApplicationUserRole.ADMINTRAINEE.name())  //implementing permission
 
 
-                .anyRequest()       //any request
-                .authenticated()    //must be authenticated (i.e. client must specify the username, password)
-                .and()              //and the mechanism to authenticate the client is through basic authentication
-                .httpBasic();       //BASIC AUTH on POSTMAN
+                .anyRequest()                                                   //any request
+                .authenticated()                                                //must be authenticated (i.e. client must specify the username, password)
+                .and()                                                          //and the mechanism to authenticate the client is through basic authentication
+                .formLogin()                                                    //FORM based Authentication
+                .loginPage("/login").permitAll()                                //custom login page
+                .defaultSuccessUrl("/courses", true)    //redirect after successful login
+                .and().rememberMe();                                            //remembers user session for default 2 weeks
+                //.httpBasic();                                                 //BASIC AUTH on POSTMAN
+
     }
 
     /*
