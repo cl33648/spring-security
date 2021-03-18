@@ -14,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableWebSecurity
@@ -60,13 +63,27 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 //.antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(), ApplicationUserRole.ADMINTRAINEE.name())  //implementing permission
 
 
-                .anyRequest()                                                   //any request
-                .authenticated()                                                //must be authenticated (i.e. client must specify the username, password)
-                .and()                                                          //and the mechanism to authenticate the client is through basic authentication
-                .formLogin()                                                    //FORM based Authentication
-                .loginPage("/login").permitAll()                                //custom login page
-                .defaultSuccessUrl("/courses", true)    //redirect after successful login
-                .and().rememberMe();                                            //remembers user session for default 2 weeks
+                .anyRequest()                                                           //any request
+                .authenticated()                                                        //must be authenticated (i.e. client must specify the username, password)
+                .and()                                                                  //and the mechanism to authenticate the client is through basic authentication
+                .formLogin()                                                            //FORM based Authentication
+                    .loginPage("/login").permitAll()                                        //custom login page
+                    .defaultSuccessUrl("/courses", true)              //redirect after successful login
+                    .passwordParameter("password")
+                    .usernameParameter("username")
+                .and().rememberMe()                                                      //remembers user session for default 2 weeks
+                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21))    //overriding the cookie's default 2weeks to 21 days
+                    .key("somethingverysecured")                                                //md5 hashing of username & expiration time
+                    .rememberMeParameter("remember-me")
+                .and()
+                .logout()                                                                       //logging out
+                    .logoutUrl("/logout")
+                    .logoutRequestMatcher(                                                      //best practice to use HTTP POST on any action
+                            new AntPathRequestMatcher("/logout", "GET"))      //that changes state to protect against CSRF attacks
+                    .clearAuthentication(true)
+                    .invalidateHttpSession(true)
+                    .deleteCookies("JSESSIONID","remember-me")                          //deletes the JSESSIONID and remember-me cookies
+                    .logoutSuccessUrl("/login");                                        //after logging out, goes back to "/login" page
                 //.httpBasic();                                                 //BASIC AUTH on POSTMAN
 
     }
