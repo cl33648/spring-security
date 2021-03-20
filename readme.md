@@ -26,3 +26,11 @@ ApplicationSecurityConfig.java - configure method
 ![](diagram/logout-url.png)  
 Logout button is added on the courses.html (localhost:8080/courses)  
 ![](diagram/logout-courses.png)  
+
+#Database Authentication  
+![](diagram/db-authentication.png)  
+The ApplicationUserDao interface makes it very easy to switch data source.  
+Currently, FakeApplicationUserDaoService (which has a"fake" implementation name) has in-memory datasource for linda, tom, annasmith (users).  
+To switch data source, simply create another service class implementing the same ApplicationUserDao interface, give it a different @Repository name and tag it in @Qualifier of ApplicationUserService class, based on whatever implementation you want.  
+
+
