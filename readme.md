@@ -33,4 +33,13 @@ The ApplicationUserDao interface makes it very easy to switch data source.
 Currently, FakeApplicationUserDaoService (which has a"fake" implementation name) has in-memory datasource for linda, tom, annasmith (users).  
 To switch data source, simply create another service class implementing the same ApplicationUserDao interface, give it a different @Repository name and tag it in @Qualifier of ApplicationUserService class, based on whatever implementation you want.  
 
+#JWT Authentication
+![](diagram/jwt-auth.png)    
+In JWT Auth process,   
+1. Front end client first sends some credentials (username/password) to authenticate itself.  
+2. The backend server checks those credentials, and if they are valid, it generates a JWT and returns it.  
+3. client has to provide this token in the request’s Authorization header in the “Bearer TOKEN” form.  
+4. The back end will check the validity of this token and authorize or reject requests. 
+    The token may also store user roles and authorize the requests based on the given authorities.  
+
 

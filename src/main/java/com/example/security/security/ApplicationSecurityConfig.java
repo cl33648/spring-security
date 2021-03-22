@@ -1,6 +1,8 @@
 package com.example.security.security;
 
 import com.example.security.auth.ApplicationUserService;
+import com.example.security.jwt.JwtTokenVerifier;
+import com.example.security.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -33,12 +36,21 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
-                //csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).and()
+
+                /**JWT STATELESS AUTH**/
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()  //STATELESS session won't be stored in the db
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager()))
+                .addFilterAfter(new JwtTokenVerifier(),
+                        JwtUsernameAndPasswordAuthenticationFilter.class)  //register JwtTokenVerifier after JwtUsernameAndPasswordAuthFilter
+
+             /**CSRF AUTH
+                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).and()
                     //csrfTokenRepository(...) setting up the repository: how the csrf token is generated
                     //.withHttpOnlyFalse means cookie will be inaccessible from client side
                     //CookieCsrfTokenRepository sets the value of token, sets the cookie, set cookie security, and adds the cookie to the response
                     //csrf header name = "X-XSRF-TOKEN"
-
+            **/
                 .authorizeRequests() //want to authorize request
 
                 /*
@@ -53,17 +65,22 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/**")               //only student role user can access localhost:8080/api/...,
                 .hasRole(ApplicationUserRole.STUDENT.name())    //Role Based authentication to protect API from ADMIN ROLE
 
+            /**ANT MATCHERS - PERMISSION BASED AUTH
                 //User Roles who has permission of COURSE_WRITE can access and DELETE,POST,and PUT the data
-                //.antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
-                //.antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
-                //.antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
+                .antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
+                .antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
+                .antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
+            **/
 
+            /**ANT MATCHER - ROLE BASED AUTH
                 //User Role of ADMIN and ADMINTRAINEE can have access to management api
-                //.antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(), ApplicationUserRole.ADMINTRAINEE.name())  //implementing permission
-
+                .antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(), ApplicationUserRole.ADMINTRAINEE.name())  //implementing permission
+            **/
 
                 .anyRequest()                                                           //any request
-                .authenticated()                                                        //must be authenticated (i.e. client must specify the username, password)
+                .authenticated();                                                       //must be authenticated (i.e. client must specify the username, password)
+
+            /**FORM-BASED LOGIN
                 .and()                                                                  //and the mechanism to authenticate the client is through basic authentication
                 .formLogin()                                                            //FORM based Authentication
                     .loginPage("/login").permitAll()                                        //custom login page
@@ -83,7 +100,11 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                     .invalidateHttpSession(true)
                     .deleteCookies("JSESSIONID","remember-me")                          //deletes the JSESSIONID and remember-me cookies
                     .logoutSuccessUrl("/login");                                        //after logging out, goes back to "/login" page
+            **/
+
+            /**BASiC Auth
                 //.httpBasic();                                                 //BASIC AUTH on POSTMAN
+            **/
 
     }
 
