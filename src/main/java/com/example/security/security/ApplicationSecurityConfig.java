@@ -1,6 +1,7 @@
 package com.example.security.security;
 
 import com.example.security.auth.ApplicationUserService;
+import com.example.security.jwt.JwtConfig;
 import com.example.security.jwt.JwtTokenVerifier;
 import com.example.security.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +15,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
 
 @Configuration
 @EnableWebSecurity
@@ -25,11 +25,15 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final PasswordEncoder passwordEncoder;
     private final ApplicationUserService applicationUserService;
+    private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
 
     @Autowired
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, ApplicationUserService applicationUserService) {
+    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, ApplicationUserService applicationUserService, SecretKey secretKey, JwtConfig jwtConfig) {
         this.passwordEncoder = passwordEncoder;
         this.applicationUserService = applicationUserService;
+        this.secretKey = secretKey;
+        this.jwtConfig = jwtConfig;
     }
 
     @Override
@@ -40,8 +44,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 /**JWT STATELESS AUTH**/
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()  //STATELESS session won't be stored in the db
-                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager()))
-                .addFilterAfter(new JwtTokenVerifier(),
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig, secretKey))
+                .addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig),
                         JwtUsernameAndPasswordAuthenticationFilter.class)  //register JwtTokenVerifier after JwtUsernameAndPasswordAuthFilter
 
              /**CSRF AUTH
